@@ -1,5 +1,12 @@
 # Reaction-Ronald
-A fun discord bot that will react to your messages!
+A fun discord bot that will react to your messages!\
+Supported Commands:
+* /add - adds a keyword and a reaction
+* /help - displays available commands
+* /list - lists active keywords and their reactions
+* /more - specify additional words to cause a reaction
+* /remove - removes a keyword, additional word of everything
+
 
 ## Bot Profile
 ![Bot Profile](https://user-images.githubusercontent.com/37476686/210154784-4bf736ff-a840-40d3-80d7-bdb90b867fb5.png)
