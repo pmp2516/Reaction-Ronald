@@ -6,6 +6,7 @@ Supported Commands:
 * /list - lists active keywords and their reactions
 * /more - specify additional words to cause a reaction
 * /remove - removes a keyword, additional word of everything
+* /chaos - Toggle Chaos mode
 
 
 ## Bot Profile
