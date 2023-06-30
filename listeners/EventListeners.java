@@ -3,11 +3,17 @@ package listeners;
 import commands.Reaction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.vdurmont.emoji.Emoji;
+import com.vdurmont.emoji.EmojiManager;
 import com.vdurmont.emoji.EmojiParser;
 
 import commands.commandManager;
@@ -22,28 +28,36 @@ import net.dv8tion.jda.api.events.emote.update.EmoteUpdateNameEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-/**
- * @author Glenn Vodra
- */
-public class EventListeners extends ListenerAdapter{
+public class EventListeners  extends ListenerAdapter{
 
-    /**
-     * This function is called when a server emote is added
-     * It is used to update the valid list of emotes stored in memory
-     * @param event Emote Added Event
-     */
+    private static final ArrayList<String> aliases = new ArrayList<String>();
+
+    public static void generateAliases(){
+        Collection<Emoji> emojis = EmojiManager.getAll();
+        for (Emoji emoji : emojis) {
+            aliases.addAll(emoji.getAliases());
+        }
+    }
+    
+    // @Override
+    // public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event){
+    //     User user = event.getUser();
+    //     String emoji = event.getReaction().getReactionEmote().getAsReactionCode();
+    //     String  channelMention = event.getChannel().getAsMention();
+
+
+    //     String msg = user.getAsMention() + " reacted to a message with " +  emoji + " in the "
+    //     + channelMention;
+
+    //     event.getGuild().getDefaultChannel().sendMessage(msg).queue();
+    // }
+
     @Override 
     public void onEmoteAdded(@NotNull EmoteAddedEvent event){
         Guild guild = event.getGuild();
         commandManager.updateServerEmojiList(guild);
     }
 
-    /**
-     * This function is called when an emote is removed
-     * When a server emote is removed it is replaced with a clown face 
-     * everywhere it was used and a message is added to indicate the change
-     * @param event Emote Removed Event
-     */
     @Override
     public void onEmoteRemoved(@NotNull EmoteRemovedEvent event){
         Emote removedEmote = event.getEmote();
@@ -83,11 +97,6 @@ public class EventListeners extends ListenerAdapter{
         commandManager.updateServerEmojiList(guild);
     }
 
-    /**
-     * This function runs when an emote name is changed
-     * The updated name is changed everywhere it is present
-     * @param event Emote Name Changed Event
-     */
     @Override 
     public void onEmoteUpdateName(@NotNull EmoteUpdateNameEvent event){
         Emote nameChangeEmote = event.getEmote();
@@ -126,14 +135,13 @@ public class EventListeners extends ListenerAdapter{
         commandManager.updateServerEmojiList(guild);
     }
 
-    /**
-     * This function runs when a message is received by the bot
-     * The bot will check the message and react to it if a keyword
-     * or trigger is found in the message
-     * @param event Message Received Event
-     */
+
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event){
+        if(!event.isFromGuild()){
+            return;
+        }
+        int reactionsAdded = 0;
         Message message = event.getMessage();
         String msg = message.getContentRaw();
         User author = event.getAuthor();
@@ -144,26 +152,72 @@ public class EventListeners extends ListenerAdapter{
         if (event.isFromType(ChannelType.TEXT) && !bot){
             for (String key : relevantCopy.keySet()) {
                     String stringToLookFor = EmojiParser.parseToUnicode(key);
-                    if (msg.contains(stringToLookFor) && !relevantCopy.get(key).getIsServer()) {
+                    if (msg.contains(stringToLookFor) && !relevantCopy.get(key).getIsServer() && reactionsAdded != 20) {
                         message.addReaction(relevantCopy.get(key).getEmoji()).queue();
+                        reactionsAdded++;
                     }
-                    else if (msg.contains(stringToLookFor) && relevantCopy.get(key).getIsServer()){
+                    else if (msg.contains(stringToLookFor) && relevantCopy.get(key).getIsServer() && reactionsAdded != 20){
                         message.addReaction(relevantCopy.get(key).getEmote(guild)).queue();
+                        reactionsAdded++;
                     } 
             }
            for (String keyword : relevantCopy.keySet()) {   
                 for (String trigger : relevantCopy.get(keyword).getOtherTriggers()) {
                      String stringToLookFor = EmojiParser.parseToUnicode(trigger);
-                     if(msg.contains(stringToLookFor) && !relevantCopy.get(keyword).getIsServer()){
+                     if(msg.contains(stringToLookFor) && !relevantCopy.get(keyword).getIsServer() && reactionsAdded != 20){
                         message.addReaction(relevantCopy.get(keyword).getEmoji()).queue();
+                        reactionsAdded++;
                      }
-                     else if(msg.contains(stringToLookFor) && relevantCopy.get(keyword).getIsServer()){
+                     else if(msg.contains(stringToLookFor) && relevantCopy.get(keyword).getIsServer() && reactionsAdded != 20){
                         message.addReaction(relevantCopy.get(keyword).getEmote(guild)).queue();
+                        reactionsAdded++;
                      }        
                 }
            }
-            
-           }
+           if(commandManager.getChaosModeStatus(guildID)){
+                chaosMode(event, reactionsAdded);
+           } 
+        }
 
+    }
+
+
+    //Chaos Mode
+    private void chaosMode(MessageReceivedEvent event, int reactionsAdded){
+        Message message = event.getMessage();
+        String msg = message.getContentRaw();
+
+        Collections.shuffle(aliases);
+        
+        String[] words = msg.split( "[\\s,]+" );
+        List<String> asList = Arrays.asList(words);
+		Collections.shuffle(asList);
+		asList.toArray(words);
+
+        for (String string : words) {
+            if(EmojiManager.containsEmoji(string) && reactionsAdded != 20){
+                ArrayList<String> units = new ArrayList<String>(EmojiParser.extractEmojis(string));
+                for (String unit : units) {
+                    reactionsAdded++;
+                    message.addReaction(unit).queue();
+                }
+            }
+            if((!(":"+ string + ":").equals(EmojiParser.parseToUnicode((":"+ string + ":")))) && reactionsAdded != 20){
+                reactionsAdded++;
+                message.addReaction(EmojiParser.parseToUnicode((":"+ string + ":"))).queue();
+            }
+            else{
+                for (String aliase : aliases) {
+                    if((aliase.contains(string) || string.contains(aliase)) && reactionsAdded != 20){
+                        reactionsAdded++;
+                        message.addReaction(EmojiParser.parseToUnicode(":"+ aliase + ":")).queue();   
+                    }
+                }
+            }
         }
     }
+
+
+
+
+}
