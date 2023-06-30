@@ -10,11 +10,6 @@ import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 
-
-/**
- * Start Bot Here
- * @Author Glenn Vodra
- */
 public class Main{
 
     private static Dotenv config;
@@ -60,6 +55,7 @@ public class Main{
     public static void main(String[] args) throws LoginException{
         Main bot = new Main();
         System.out.println(bot.toString() + " STARTED!");
+        EventListeners.generateAliases();
     }
 
 
