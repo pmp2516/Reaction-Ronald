@@ -1,7 +1,6 @@
 package commands;
 
 import java.io.BufferedReader;
-import java.io.Console;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -27,10 +26,6 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
-/**
- * Class for all commands that interface with users
- * @author Glenn Vodra
- */
 public class commandManager extends ListenerAdapter{
 
     private static Gson gson = new Gson();
@@ -42,6 +37,8 @@ public class commandManager extends ListenerAdapter{
     // Holds Current list of active server Emoji
     private static HashMap<Long, ArrayList<Emote>> serverEmojiList = new HashMap<Long,ArrayList<Emote>>();
 
+    private static HashMap<Long, Boolean> chaosMode = new HashMap<Long, Boolean>();
+
     private final String helpCommandTxT = "Thanks for using Reaction Ronald! :clown:"+
     "\nList of commands:" +
     "\n"+ "\\help                                                            --You are using this one now"+ 
@@ -49,37 +46,28 @@ public class commandManager extends ListenerAdapter{
     "\n"+ "\\more \"keyword\" \"other trigger\" \"other trigger\" (optional) --Add more ways to trigger the keyword like spelling or capitalization" + 
     "\n"+ "\\remove \"All/keyword\" \"trigger\" (optional)                   --Removes everything , a keyword, or a trigger"+
     "\n"+ "\\list                                                            --Lists all the configured reactions"+
+    "\n"+ "\\Chaos                                                           --Tries to react to everything"+
     // "\n"+ "\\random (0-99) --Adjust randomness, 0 (only uses keywords), 1-99 (how often Ronald will add a random emoji to any message)"+
     // "\n"+ "\\enable --Turn me on :P"+
     // "\n"+ "\\disable --Turn me off :("+
     "\n";
 
-    /**
-     * Get active list of reactions for the appropriate guild
-     * @param guildID The guild to lookup
-     * @return The active list of reactions
-     */
     public static HashMap<String, Reaction> getReactions(Long guildID){
         return reactions.get(guildID);
     }
 
-    /**
-     * Updates the list of active custom emotes
-     * @param guild The guild to lookup
-     */
     public static void updateServerEmojiList(Guild guild){
         ArrayList<Emote> customEmotes = new ArrayList<>();
         customEmotes.addAll(guild.getEmotes());
         serverEmojiList.put(guild.getIdLong(), customEmotes);
     }
 
-    /**
-     * Stores a set of server reactions in the appropriate server
-     * @param guild The guild that owns the reactions
-     * @param serverReactions the new list of server reactions
-     */
     public static void updateServerReactions(Guild guild, HashMap<String, Reaction> serverReactions){
         reactions.put(guild.getIdLong(), serverReactions);
+    }
+
+    public static boolean getChaosModeStatus(long guildID){
+        return chaosMode.get(guildID);
     }
 
     /**
@@ -164,6 +152,7 @@ public class commandManager extends ListenerAdapter{
     /**
      * Register commands and initialize other important things
      */
+
     @Override
     public void onGuildJoin(@NotNull GuildJoinEvent event){
         //Update Reactions
@@ -177,6 +166,8 @@ public class commandManager extends ListenerAdapter{
         customEmotes.addAll(event.getGuild().getEmotes());
         serverEmojiList.put(guildID, customEmotes);
 
+        chaosMode.put(guildID, false);
+
         List<CommandData> commandData = new ArrayList<>();
 
         // /help
@@ -210,12 +201,18 @@ public class commandManager extends ListenerAdapter{
         // /list
         commandData.add(Commands.slash("list", "List all active Keywords + info"));
 
+        // /random
+
+        // /enable
+
+        // /disable
+
+        // /chaos
+        commandData.add(Commands.slash("chaos", "Toggle the chaos"));
+
         event.getGuild().updateCommands().addCommands(commandData).queue();
     }
 
-     /**
-     * Register commands and initialize other important things
-     */
     @Override
     public void onGuildReady(@NotNull GuildReadyEvent event){
         //Update Reactions
@@ -229,6 +226,8 @@ public class commandManager extends ListenerAdapter{
         customEmotes.addAll(event.getGuild().getEmotes());
         serverEmojiList.put(guildID, customEmotes);
 
+        chaosMode.put(guildID, false);
+
         List<CommandData> commandData = new ArrayList<>();
 
         // /help
@@ -261,6 +260,15 @@ public class commandManager extends ListenerAdapter{
 
         // /list
         commandData.add(Commands.slash("list", "List all active Keywords + info"));
+
+        // /random
+
+        // /enable
+
+        // /disable
+
+        // /chaos
+        commandData.add(Commands.slash("chaos", "Toggle the chaos"));
 
         event.getGuild().updateCommands().addCommands(commandData).queue();
     }
@@ -407,11 +415,37 @@ public class commandManager extends ListenerAdapter{
                 event.reply(reply).setEphemeral(true).queue();
                 for (String entry : copyAvailable.keySet()) {
                      event.getHook().sendMessage(copyAvailable.get(entry).toString()).setEphemeral(true).queue();
+                     //channel.sendMessage(copyAvailable.get(entry).toString()).queue();
                 }                
             }
         }
+        //-----------------CHAOS-----------------------
+        else if(command.equals("chaos")){
+            Long guildID = event.getGuild().getIdLong();
+            if(chaosMode.get(guildID) == true){
+                chaosMode.put(guildID, false);
+                event.reply("Chaos Mode Toggled OFF").setEphemeral(true).queue();
+            }
+            else{
+                chaosMode.put(guildID, true);
+                event.reply("Chaos Mode Toggled ON").setEphemeral(true).queue();
+            }
+            
+        }
+        // //-----------------RANDOM---------------------
+        // else if(command.equals("random")){
+        //     // TODO
+        // }
+        // //-----------------ENABLE---------------------
+        // else if(command.equals("enable")){
+        //     // TODO
+        // }
+        // //-----------------DISABLE---------------------
+        // else if(command.equals("disable")){
+        //     // TODO
+        // }
         else{
-            System.out.println("Unknown command: " + command);
+            System.out.println("WTF " + command);
         }
 
     }
