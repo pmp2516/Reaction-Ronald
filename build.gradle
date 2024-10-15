@@ -1,0 +1,40 @@
+plugins {
+    // Apply the application plugin to add support for building a CLI application in Java.
+    id 'application'
+}
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+}
+
+dependencies {
+    // Use JUnit Jupiter for testing.
+    testImplementation libs.junit.jupiter
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Application dependencies
+    implementation 'net.dv8tion:JDA:5.0.0-alpha.12'
+    implementation 'io.github.cdimascio:dotenv-java:2.2.4'
+    implementation 'com.vdurmont:emoji-java:5.1.1'
+    implementation 'com.google.code.gson:gson:2.9.1'
+}
+
+java {
+    // Use Java 19.
+    // NOTE: Gradle itself (i.e. this script) is not run using this Java.
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'com.glennvodra.Main'
+}
+
+tasks.named('test') {
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
+}
